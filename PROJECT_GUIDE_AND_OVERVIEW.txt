@@ -1,0 +1,170 @@
+SECUREBANK AI
+ENTERPRISE EDITION - PROJECT OVERVIEW, USER GUIDE AND TECHNICAL DOCUMENTATION
+==========================================================================
+
+1. PROJECT OVERVIEW
+-------------------
+SecureBank AI is a Python desktop prototype for banking cybersecurity monitoring. It demonstrates login-risk monitoring, unusual file-access detection, alerts, audit history, role-based dashboards and machine-learning-assisted risk analysis.
+
+Technology stack: Python, PySide6, SQLite, scikit-learn, pandas, NumPy, Matplotlib and optional SMTP email.
+
+Main modules:
+- BankShield: monitors login success/failure, time, device, IP/country metadata, failed streaks, new devices/countries and login frequency.
+- LeakGuard: analyses file names, actions, file size, sensitivity, access volume and time patterns for unusual access or possible bulk exfiltration.
+- Security Operations: dashboards, alerts, audit history, user administration, notification preferences and ML evaluation.
+
+IMPORTANT: This is an educational/prototype desktop application, not a certified banking platform. It is not connected to a real bank core system. Do not use it for real financial-access decisions without institutional security review, representative data, penetration testing, privacy/compliance approval and operational controls.
+
+2. PROJECT FILE MAP
+-------------------
+main.py - startup, login, registration, role selection, authentication and window lifecycle.
+customer_ui.py - customer overview, activity, alerts, security score, profile and notifications.
+staff_ui.py - security analyst workspace, BankShield, LeakGuard, alerts, live monitoring.
+admin_ui.py - administrator dashboard, user management, alerts, ML/live tools and settings.
+panels.py - reusable dashboard panels: overview, users, alerts, login events, file events, live monitor.
+dialogs.py - password reset, profile and notification dialogs.
+themes.py - shared colours, typography, controls, tables, tabs and dashboard theme.
+ui_common.py - shared widgets, charts, tables, icons, dashboard base classes and idle-session behavior.
+database.py - SQLite schema, migrations, account operations, password hashing and event persistence.
+accounts.py - username/email/password validation and email-based password reset.
+monitor.py - authentication monitoring, risk calculation, alert generation and notification routing.
+ml_engine.py - Random Forest / Isolation Forest model processing and evaluation.
+datasets.py - synthetic/bootstrap data for prototype model training.
+simulator.py - synthetic security event generator, used for controlled testing.
+notifier.py - email notifications.
+config.py - application paths, environment variables, thresholds, lockout and timeout settings.
+demo_users.py - separate, opt-in demo-account utility; never runs during normal startup.
+icon.ico / icon.png - application icon assets.
+build_exe.bat - Windows PyInstaller build helper.
+smoke_test.py - backend tests using a temporary database.
+
+3. INSTALLATION AND FIRST RUN
+-----------------------------
+Recommended: Windows 10/11 and Python 3.10+. In PowerShell from the project folder:
+
+    python -m venv .venv
+    .venv\Scripts\Activate.ps1
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements.txt
+    python main.py
+
+Private settings: copy .env.example to .env and configure only the settings required by your environment. Never upload or distribute the real .env. Variable names include SB_STAFF_CODE, SB_ADMIN_CODE, SB_SMTP_USER, SB_SMTP_APP_PASSWORD and SB_SECURITY_EMAIL. Use unique private values; do not reuse examples in a real deployment.
+
+4. HOW USERS REGISTER AND LOG IN
+-------------------------------
+Login workflow:
+1. Start the app with python main.py.
+2. Choose Customer, Staff or Admin in the role selector.
+3. Enter the registered username and password.
+4. Press Enter or click Login.
+5. The app verifies credentials through the authentication/monitoring layer. Successful authentication opens the dashboard associated with the stored account role.
+6. If the chosen role differs from the account role, the app displays the actual role and updates the selector; submit Login again.
+7. Failed attempts are recorded by monitoring logic and can contribute to risk detection or temporary lockout.
+
+Customer registration:
+1. Open Register. Enter full name, username, email, password and confirmation.
+2. Usernames must be 3-30 characters using letters, digits, dot, underscore or hyphen.
+3. Password policy requires at least 8 characters, uppercase, lowercase and a digit.
+4. Choose Customer and create the account. Return to Login.
+
+Staff/Admin registration requires the private SB_STAFF_CODE or SB_ADMIN_CODE configured by the administrator. If not configured, privileged self-registration is disabled. Privileged accounts should be provisioned only by an authorised administrator.
+
+Password reset:
+1. Select Forgot password and enter the username.
+2. If the account has an email and SMTP is configured, a one-time code is sent by email.
+3. Enter the code and a new password before expiry. The OTP is not displayed locally.
+4. If email is unavailable, contact the authorised administrator.
+
+5. ROLE-BASED WORKSPACES
+------------------------
+Customer: review security overview, login activity, device information and alerts; configure notification preferences; update profile/password; report suspicious activity.
+
+Staff: review BankShield and LeakGuard events, alerts, audit history, customer security activity, live monitoring and controlled testing according to application permissions.
+
+Admin: review overall activity, manage accounts and roles, enable/disable accounts, resolve alerts, inspect BankShield/LeakGuard, access live/ML tools and manage system settings.
+
+The login window is hidden while a role dashboard is active. This is a normal window transition, not a minimize operation. Logout or idle timeout restores the login window.
+
+6. HOW BANKSHIELD WORKS
+-----------------------
+BankShield receives login events with username, timestamp/hour, success/failure, device, IP/country metadata when supplied, failed-attempt streak, new-device/new-country indicators and recent login frequency. It evaluates repeated failures, unusual times, unfamiliar devices/locations and high login frequency. Rule-based indicators and model signals contribute to a risk score/verdict and may create security alerts. Risk scores are indicators for investigation, not proof of compromise. Metadata quality depends on the source that supplies it.
+
+7. HOW LEAKGUARD WORKS
+----------------------
+LeakGuard receives file-access events containing username, file name, action, size, sensitivity, time, recent file count and recent transfer volume. It can flag unusually high access volume, large downloads, sensitive-file access and activity outside expected hours. The prototype analyses events passed to its monitoring functions or generated by its simulator; it does not automatically inspect every computer file or monitor a bank network without a separately developed, authorised endpoint/network integration.
+
+8. MACHINE LEARNING AND ACCURACY
+--------------------------------
+Random Forest is a supervised ensemble classifier when labelled examples are available. Isolation Forest is an unsupervised anomaly detector. Features are derived from login and file activity and model outputs are combined with security rules.
+
+Metrics: accuracy is the share of all predictions that are correct; precision is the share of flagged events that are truly positive; recall is the share of true positive events detected; F1 is the harmonic mean of precision and recall; ROC-AUC measures ranking across thresholds.
+
+The prototype uses synthetic/bootstrap data. Metrics from synthetic data are demonstration metrics, not a reliable estimate of real banking detection accuracy. Real improvement requires representative labelled data, independent hold-out testing, prevention of train/test leakage, cross-validation, threshold selection and false-positive/false-negative analysis.
+
+9. ALERTS AND EMAIL
+-------------------
+Live successful/failed sign-ins, ordinary file events, profile changes, password changes and lockout notices send email to the affected account when the account has email notifications enabled. Suspicious login alerts go to the account according to its severity preference plus enabled admins; HIGH alerts can also reach SB_SECURITY_EMAIL. Suspicious file-exfiltration alerts go to admins/security and do not notify the potentially involved account. Historical CSV imports and synthetic simulator events are recorded but do not send external email. Delivery statuses are recorded in the notification history.
+
+Email requires valid SMTP configuration in the private .env. The current sender uses Gmail SMTP over SSL. Use a Gmail App Password or an organisation-approved SMTP credential; never hardcode or distribute secrets. Inbox placement may require SPF, DKIM and DMARC for a custom sending domain. The desktop app cannot guarantee delivery to the inbox. There is no notification cooldown for live activity; repeated actions can create many emails.
+
+10. OPTIONAL DEMO USERS FOR TESTING
+-----------------------------------
+Demo users are not created automatically. Run this utility only against a disposable/test database, never a production database. The script uses the database path configured in config.py.
+
+Create missing demo users:
+    python demo_users.py --create
+
+Dedicated usernames/roles:
+    demo_customer - customer
+    demo_staff    - staff
+    demo_admin    - admin
+
+The script generates random passwords and prints them once in the terminal. Store credentials securely. Existing exact usernames are skipped and their passwords are not changed.
+
+List status:
+    python demo_users.py --list
+
+Remove only the dedicated demo accounts:
+    python demo_users.py --remove
+
+Removing accounts does not erase historical login/file events or alerts. Use a disposable test database if you want to reset test data.
+
+Testing workflow: create demo users; sign in as demo_admin; open the administrator Live/ML area; run only intended test scenarios; inspect BankShield, LeakGuard and alerts; stop the simulator. Simulator records are synthetic and are not evidence of real customer behavior or an actual attack.
+
+11. DATABASE AND DATA PRESERVATION
+----------------------------------
+SQLite stores account records, login events, file events and alerts. Back up the database before schema migrations, bulk cleanup or testing. Never overwrite a database to fix a login problem without a backup. Passwords are hashed using PBKDF2-HMAC-SHA256 with per-user salt. The database still contains personal/account metadata and password hashes, so restrict access and protect backups.
+
+12. LOGIN BACKGROUND, WINDOW SIZE AND TASKBAR ICON
+-------------------------------------------------
+The login window is sized relative to available desktop geometry and centered. It uses an enterprise blue background and branded gradient hero panel. Opacity animation is disabled to avoid possible Windows taskbar/window-state glitches. The login window is hidden during dashboard use, not minimized; logout and idle timeout restore it in normal foreground state. Test sizing and taskbar behavior on the target Windows display/scaling configuration. Windows may cache old icons; rebuild the EXE and restart Explorer or Windows if the old icon persists.
+
+13. TESTING
+------------
+Run backend smoke tests: python smoke_test.py. The smoke test uses a temporary database. It does not verify the complete visual GUI, Windows taskbar behavior, SMTP deliverability or real-world ML performance. Manually test customer registration/login, privileged account login, invalid passwords, role mismatch, email password reset, logout/idle timeout, all role dashboards, BankShield, LeakGuard, alerts and optional demo creation/removal.
+
+14. BUILDING THE WINDOWS EXECUTABLE
+-----------------------------------
+In PowerShell with the virtual environment active:
+    python -m pip install -r requirements.txt pyinstaller
+    .\build_exe.bat
+
+Expected output: dist\SecureBankAI.exe. Keep private .env configuration separate. Do not distribute a real .env. Test the EXE on a clean Windows machine before sharing. A successful build is not a security certification.
+
+15. SECURITY AND RESPONSIBLE USE
+--------------------------------
+Use unique passwords and keep staff/admin codes private. Never use production customer data for demos. Do not commit .env, passwords, app passwords or private database files to public repositories. Restrict access to databases/backups. Use only authorised test systems. Keep dependencies updated. Treat alerts as investigation leads, not definitive conclusions. Do not claim production-grade accuracy from synthetic data.
+
+END OF DOCUMENT
+
+
+16. ADMINISTRATOR VALIDATION EVENT ATTRIBUTION (UPDATE)
+------------------------------------------------------
+When an administrator manually clicks a one-shot validation button such as
+"Bulk-download validation", the generated test events are now attributed to
+the currently signed-in administrator. The live event label uses the normal activity wording. The validation
+remains generated test activity internally; it is not a real file transfer.
+
+The continuous "Start controlled test traffic" mode remains a simulation
+that can select test subjects from eligible customer/staff accounts. Events
+already written to an earlier database are not rewritten by this code update.

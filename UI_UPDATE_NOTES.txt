@@ -1,0 +1,3 @@
+Removed explanatory page subtitles from staff, admin, and customer console sections.
+Removed the extra LeakGuard upload helper paragraph.
+Console header branding now uses icon.png (bank-and-shield artwork); build_exe.bat bundles that image.
